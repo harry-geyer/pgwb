@@ -4,6 +4,7 @@ SRC_DIR:=$(PROJ_DIR)/src
 RESOURCE_DIR:=$(PROJ_DIR)/resources
 BUILD_DIR:=$(PROJ_DIR)/build
 STATIC_RESOURCE_DIR:=$(PROJ_DIR)/static_resources
+INT_INC_DIR:=$(PROJ_DIR)/src/internal
 
 OBJ_DIR:=$(BUILD_DIR)/objs
 WEBROOT:=$(BUILD_DIR)/webroot
@@ -11,10 +12,11 @@ BUILT_RESOURCE_DIR:=$(BUILD_DIR)/resources
 
 CC:=emcc
 CFLAGS:=-O3
-LDFLAGS:=
+CFLAGS+=-I$(INT_INC_DIR)
+LDFLAGS:=-lglfw3
 EMCCFLAGS:=-s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']"
 
-SRCS:=$(shell find $(SRC_DIR) -type f)
+SRCS:=$(shell find $(SRC_DIR) -type f -name "*.c")
 RESOURCES:=$(shell find $(RESOURCE_DIR) -type f)
 HTML:=$(WEBROOT)/index.html
 
@@ -36,7 +38,7 @@ $(OBJS): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 $(HTML): $(OBJS) $(STATIC_RESOURCE_DIR)/shell_minimal.html
 	@mkdir -p $(@D)
-	$(CC) -o $@ $(LDFLAGS) --shell-file $(STATIC_RESOURCE_DIR)/shell_minimal.html $< $(EMCCFLAGS)
+	$(CC) -o $@ $(LDFLAGS) --shell-file $(STATIC_RESOURCE_DIR)/shell_minimal.html $(OBJS) $(EMCCFLAGS)
 
 $(BUILT_RESOURCES): $(BUILT_RESOURCE_DIR)/%: $(RESOURCE_DIR)/%
 	@mkdir -p $(@D)

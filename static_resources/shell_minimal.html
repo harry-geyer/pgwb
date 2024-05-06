@@ -142,8 +142,8 @@
         const result = Module.ccall(
           "button_pressed", // name of C function
           null, // return type
-          null, // argument types
-          null, // arguments
+          ['string', 'number'], // argument types
+          ['test', 3], // arguments
         );
       });
     </script>
