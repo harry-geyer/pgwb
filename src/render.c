@@ -1,6 +1,8 @@
 #include <stdio.h>
 
-#include <GLES/gl.h>
+#include <GL/gl.h>
+#include <GLES3/gl3.h>
+#include <GL/glext.h>
 #include <GLFW/glfw3.h>
 #include <emscripten/emscripten.h>
 
@@ -8,20 +10,24 @@
 #define EGL_EGLEXT_PROTOTYPES
 
 
-static const char* _render_vertex_shader_source = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
+static const char* _render_vertex_shader_source = 
+     "uniform mat4 MVP;\n"
+     "attribute vec3 vCol;\n"
+     "attribute vec2 vPos;\n"
+     "varying vec3 color;\n"
+     "void main()\n"
+     "{\n"
+     "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
+     "    color = vCol;\n"
+     "}\n";
 
 static const char* _render_fragment_shader_text =
-    "precision mediump float;\n"
-    "varying vec3 color;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_FragColor = vec4(color, 1.0);\n"
-    "}\n";
+     "precision mediump float;\n"
+     "varying vec3 color;\n"
+     "void main()\n"
+     "{\n"
+     "    gl_FragColor = vec4(color, 1.0);\n"
+     "}\n";
 
 static const struct
 {
@@ -34,14 +40,43 @@ static const struct
     {0.f  , 0.6f , 0.f, 0.f, 1.f},
 };
 
+static GLFWwindow* _render_window = NULL;
+static GLuint _render_shader_program = 0;
+static GLuint _render_vao = 0;
 
-EMSCRIPTEN_KEEPALIVE static void _render_error_callback(int error, const char* description)
+
+static void _render_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
 
 
-EMSCRIPTEN_KEEPALIVE void render(void)
+static void _render_main_loop_iterate(void)
+{
+    GLFWwindow* window = _render_window;
+
+    if (!glfwWindowShouldClose(window))
+    {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
+
+        glfwPollEvents();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(_render_shader_program);
+        glBindVertexArray(_render_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glfwSwapBuffers(window);
+    }
+    else 
+    {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    }
+}
+
+
+void render(void)
 {
     printf("RENDERING\n");
     glfwSetErrorCallback(_render_error_callback);
@@ -51,11 +86,12 @@ EMSCRIPTEN_KEEPALIVE void render(void)
         return;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "Render", glfwGetPrimaryMonitor(), NULL);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "Render", NULL, NULL);
     if (!window)
     {
         printf("Creating window failed");
@@ -63,23 +99,36 @@ EMSCRIPTEN_KEEPALIVE void render(void)
         return;
     }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+
+    printf("Renderer: %s.\n", glGetString(GL_RENDERER));
+    printf("OpenGL version supported %s.\n", glGetString(GL_VERSION));
 
     GLuint vbo = 0;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof( float ), _render_vertices, GL_STATIC_DRAW);
-     
-    while (!glfwWindowShouldClose(window))
-    {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
+    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), _render_vertices, GL_STATIC_DRAW);
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    _render_vao = vao;
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-    glfwDestroyWindow(window);
- 
-    glfwTerminate();
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vs, 1, &_render_vertex_shader_source, NULL);
+    glCompileShader(vs);
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fs, 1, &_render_fragment_shader_text, NULL);
+    glCompileShader(fs);
+
+    _render_shader_program = glCreateProgram();
+    glAttachShader(_render_shader_program, fs);
+    glAttachShader(_render_shader_program, vs);
+    glLinkProgram(_render_shader_program);
+
+    _render_window = window;
+    emscripten_set_main_loop(_render_main_loop_iterate, 0, 1); 
+    glfwSwapInterval(1);
 }
+
