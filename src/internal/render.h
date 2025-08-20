@@ -1,4 +1,4 @@
 #pragma once
 
-EMSCRIPTEN_KEEPALIVE void render(void);
+void pgwb_render(void);
 

@@ -10,7 +10,7 @@
 #define EGL_EGLEXT_PROTOTYPES
 
 
-static const char* _render_vertex_shader_source = 
+static const char* _pgwb_render_vertex_shader_source = 
     "#version 300 es\n"
     "precision mediump float;\n"
     "in vec2 v2_pos;\n"
@@ -19,7 +19,7 @@ static const char* _render_vertex_shader_source =
     "    gl_Position = vec4(v2_pos, 0.0, 1.0);\n"
     "}\n";
 
-static const char* _render_fragment_shader_source = 
+static const char* _pgwb_render_fragment_shader_source = 
     "#version 300 es\n"
     "precision mediump float;\n"
     "out vec3 v3_colour;\n"
@@ -32,53 +32,26 @@ static const char* _render_fragment_shader_source =
 static const struct
 {
     float x, y;
-} _render_vertices[3] =
+} _pgwb_render_vertices[3] =
 {
     {-0.6f, -0.4f},
     { 0.6f, -0.4f},
     { 0.f ,  0.6f},
 };
 
-static GLFWwindow* _render_window = NULL;
-static GLuint _render_shader_program = 0;
-static GLuint _render_vao = 0;
+static GLFWwindow* _pgwb_render_window = NULL;
+static GLuint _pgwb_render_shader_program = 0;
+static GLuint _pgwb_render_vao = 0;
 
 
-static void _render_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
-}
+static void _pgwb_render_error_callback(int error, const char* description);
+static void _pgwb_render_main_loop_iterate(void);
 
 
-static void _render_main_loop_iterate(void)
-{
-    GLFWwindow* window = _render_window;
-
-    if (!glfwWindowShouldClose(window))
-    {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
-
-        glfwPollEvents();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(_render_shader_program);
-        glBindVertexArray(_render_vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
-    }
-    else 
-    {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-    }
-}
-
-
-void render(void)
+void pgwb_render(void)
 {
     printf("RENDERING\n");
-    glfwSetErrorCallback(_render_error_callback);
+    glfwSetErrorCallback(_pgwb_render_error_callback);
     if (!glfwInit())
     {
         printf("Initialisation failed");
@@ -105,31 +78,61 @@ void render(void)
     GLuint vbo = 0;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), _render_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), _pgwb_render_vertices, GL_STATIC_DRAW);
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    _render_vao = vao;
+    _pgwb_render_vao = vao;
 
     glEnableVertexAttribArray(0);
 
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &_render_vertex_shader_source, NULL);
+    glShaderSource(vs, 1, &_pgwb_render_vertex_shader_source, NULL);
     glCompileShader(vs);
 
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &_render_fragment_shader_source, NULL);
+    glShaderSource(fs, 1, &_pgwb_render_fragment_shader_source, NULL);
     glCompileShader(fs);
 
-    _render_shader_program = glCreateProgram();
-    glAttachShader(_render_shader_program, fs);
-    glAttachShader(_render_shader_program, vs);
-    glLinkProgram(_render_shader_program);
+    _pgwb_render_shader_program = glCreateProgram();
+    glAttachShader(_pgwb_render_shader_program, fs);
+    glAttachShader(_pgwb_render_shader_program, vs);
+    glLinkProgram(_pgwb_render_shader_program);
 
-    _render_window = window;
-    emscripten_set_main_loop(_render_main_loop_iterate, 0, 1); 
+    _pgwb_render_window = window;
+    emscripten_set_main_loop(_pgwb_render_main_loop_iterate, 0, 1); 
     glfwSwapInterval(1);
+}
+
+static void _pgwb_render_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Error: %s\n", description);
+}
+
+
+static void _pgwb_render_main_loop_iterate(void)
+{
+    GLFWwindow* window = _pgwb_render_window;
+
+    if (!glfwWindowShouldClose(window))
+    {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
+
+        glfwPollEvents();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(_pgwb_render_shader_program);
+        glBindVertexArray(_pgwb_render_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glfwSwapBuffers(window);
+    }
+    else 
+    {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    }
 }
 

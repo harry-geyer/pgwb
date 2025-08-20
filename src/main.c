@@ -10,7 +10,7 @@ EMSCRIPTEN_KEEPALIVE void button_pressed(char* string, int number);
 int main(int argc, char* argv[])
 {
     printf("Hello World\n");
-    render();
+    pgwb_render();
     return 0;
 }
 
