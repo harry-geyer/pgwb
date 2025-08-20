@@ -1,6 +1,7 @@
-PROJ_DIR:=.
+PROJ_DIR?=.
 
 SRC_DIR:=$(PROJ_DIR)/src
+LIB_DIR:=$(PROJ_DIR)/libs
 RESOURCE_DIR:=$(PROJ_DIR)/resources
 BUILD_DIR:=$(PROJ_DIR)/build
 STATIC_RESOURCE_DIR:=$(PROJ_DIR)/static_resources
@@ -12,9 +13,9 @@ BUILT_RESOURCE_DIR:=$(BUILD_DIR)/resources
 
 CC:=emcc
 CFLAGS:=-O3
-CFLAGS+=-I$(INT_INC_DIR)
+CFLAGS+= -I$(INT_INC_DIR) -I$(LIB_DIR)
 LDFLAGS:=-lglfw3
-EMCCFLAGS:=-s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']"
+EMCCFLAGS:=-s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']" -s USE_WEBGL2=1 -s USE_GLFW=3 -sMAX_WEBGL_VERSION=2
 
 SRCS:=$(shell find $(SRC_DIR) -type f -name "*.c")
 RESOURCES:=$(shell find $(RESOURCE_DIR) -type f)
