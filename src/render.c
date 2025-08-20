@@ -11,33 +11,32 @@
 
 
 static const char* _render_vertex_shader_source = 
-     "uniform mat4 MVP;\n"
-     "attribute vec3 vCol;\n"
-     "attribute vec2 vPos;\n"
-     "varying vec3 color;\n"
-     "void main()\n"
-     "{\n"
-     "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-     "    color = vCol;\n"
-     "}\n";
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "in vec2 v2_pos;\n"
+    "void main()\n"
+    "{\n"
+    "    gl_Position = vec4(v2_pos, 0.0, 1.0);\n"
+    "}\n";
 
-static const char* _render_fragment_shader_text =
-     "precision mediump float;\n"
-     "varying vec3 color;\n"
-     "void main()\n"
-     "{\n"
-     "    gl_FragColor = vec4(color, 1.0);\n"
-     "}\n";
+static const char* _render_fragment_shader_source = 
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "out vec3 v3_colour;\n"
+    "void main()\n"
+    "{\n"
+    "    v3_colour = vec3(1, 1, 1);\n"
+    "}\n";
+
 
 static const struct
 {
     float x, y;
-    float r, g, b;
 } _render_vertices[3] =
 {
-    {-0.6f, -0.4f, 1.f, 0.f, 0.f},
-    {0.6f , -0.4f, 0.f, 1.f, 0.f},
-    {0.f  , 0.6f , 0.f, 0.f, 1.f},
+    {-0.6f, -0.4f},
+    { 0.6f, -0.4f},
+    { 0.f ,  0.6f},
 };
 
 static GLFWwindow* _render_window = NULL;
@@ -110,16 +109,18 @@ void render(void)
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-    glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     _render_vao = vao;
 
+    glEnableVertexAttribArray(0);
+
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &_render_vertex_shader_source, NULL);
     glCompileShader(vs);
+
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &_render_fragment_shader_text, NULL);
+    glShaderSource(fs, 1, &_render_fragment_shader_source, NULL);
     glCompileShader(fs);
 
     _render_shader_program = glCreateProgram();
