@@ -10,6 +10,13 @@
 #define EGL_EGLEXT_PROTOTYPES
 
 
+typedef struct {
+    GLFWwindow* window;
+    GLuint shader_program_id;
+    GLuint vao_id;
+} pgwb_render_ctx_t;
+
+
 static const char* _pgwb_render_vertex_shader_source = 
     "#version 300 es\n"
     "precision mediump float;\n"
@@ -39,23 +46,37 @@ static const struct
     { 0.f ,  0.6f},
 };
 
-static GLFWwindow* _pgwb_render_window = NULL;
-static GLuint _pgwb_render_shader_program = 0;
-static GLuint _pgwb_render_vao = 0;
+static pgwb_render_ctx_t _pgwb_render_ctx =
+{
+    .window = NULL,
+    .shader_program_id = 0,
+    .vao_id = 0,
+};
 
 
 static void _pgwb_render_error_callback(int error, const char* description);
-static void _pgwb_render_main_loop_iterate(void);
 
 
-void pgwb_render(void)
+int pgwb_render_init(void** ctx)
 {
-    printf("RENDERING\n");
+    if (!ctx || *ctx) 
+    {
+        fprintf(stderr, "Context pointer NULL or already assigned\n");
+        return 1;
+    }
+    *ctx = calloc(1, sizeof(pgwb_render_ctx_t));
+    if (!*ctx)
+    {
+        fprintf(stderr, "Failed allocating memory for rendering context\n");
+        return 1;
+    }
+    pgwb_render_ctx_t* r_ctx = (pgwb_render_ctx_t*)*ctx;
+
     glfwSetErrorCallback(_pgwb_render_error_callback);
     if (!glfwInit())
     {
-        printf("Initialisation failed");
-        return;
+        fprintf(stderr, "Initialisation failed\n");
+        return 1;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -66,10 +87,11 @@ void pgwb_render(void)
     GLFWwindow* window = glfwCreateWindow(640, 480, "Render", NULL, NULL);
     if (!window)
     {
-        printf("Creating window failed");
+        fprintf(stderr, "Creating window failed");
         glfwTerminate();
-        return;
+        return 1;
     }
+    r_ctx->window = window;
     glfwMakeContextCurrent(window);
 
     printf("Renderer: %s.\n", glGetString(GL_RENDERER));
@@ -84,7 +106,7 @@ void pgwb_render(void)
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    _pgwb_render_vao = vao;
+    r_ctx->vao_id = vao;
 
     glEnableVertexAttribArray(0);
 
@@ -96,43 +118,67 @@ void pgwb_render(void)
     glShaderSource(fs, 1, &_pgwb_render_fragment_shader_source, NULL);
     glCompileShader(fs);
 
-    _pgwb_render_shader_program = glCreateProgram();
-    glAttachShader(_pgwb_render_shader_program, fs);
-    glAttachShader(_pgwb_render_shader_program, vs);
-    glLinkProgram(_pgwb_render_shader_program);
+    GLuint shader_program_id = glCreateProgram();
+    glAttachShader(shader_program_id, fs);
+    glAttachShader(shader_program_id, vs);
+    glLinkProgram(shader_program_id);
+    r_ctx->shader_program_id = shader_program_id;
 
-    _pgwb_render_window = window;
-    emscripten_set_main_loop(_pgwb_render_main_loop_iterate, 0, 1); 
+    return 0;
+}
+
+
+int pgwb_render_post_init(void* ctx)
+{
     glfwSwapInterval(1);
-}
-
-static void _pgwb_render_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
+    return 0;
 }
 
 
-static void _pgwb_render_main_loop_iterate(void)
+int pgwb_render_deinit(void* ctx)
 {
-    GLFWwindow* window = _pgwb_render_window;
+    if (!ctx)
+    {
+        fprintf(stderr, "Already deinited render context\n");
+        return 1;
+    }
+    free(ctx);
+    return 0;
+}
 
-    if (!glfwWindowShouldClose(window))
+
+void pgwb_render_iterate(void* ctx)
+{
+    if (!ctx)
+    {
+        fprintf(stderr, "Render context has not been initialised\n");
+        return;
+    }
+    pgwb_render_ctx_t* r_ctx = (pgwb_render_ctx_t*)ctx;
+
+    if (!glfwWindowShouldClose(r_ctx->window))
     {
         int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(r_ctx->window, &width, &height);
         glViewport(0, 0, width, height);
 
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(_pgwb_render_shader_program);
-        glBindVertexArray(_pgwb_render_vao);
+        glUseProgram(r_ctx->shader_program_id);
+        glBindVertexArray(r_ctx->vao_id);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(r_ctx->window);
     }
     else 
     {
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(r_ctx->window);
         glfwTerminate();
     }
+}
+
+
+static void _pgwb_render_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Error: %s\n", description);
 }
 

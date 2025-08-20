@@ -9,8 +9,10 @@ EMSCRIPTEN_KEEPALIVE void button_pressed(char* string, int number);
 
 int main(int argc, char* argv[])
 {
-    printf("Hello World\n");
-    pgwb_render();
+    void* render_ctx = NULL;
+    pgwb_render_init(&render_ctx);
+    emscripten_set_main_loop_arg(pgwb_render_iterate, render_ctx, 0, 1);
+    pgwb_render_post_init(render_ctx);
     return 0;
 }
 
