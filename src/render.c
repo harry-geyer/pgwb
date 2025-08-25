@@ -9,55 +9,15 @@
 #define GL_GLEXT_PROTOTYPES
 #define EGL_EGLEXT_PROTOTYPES
 
+#include "render.h"
 #include "tile.h"
 
-
-typedef struct {
-    GLFWwindow* window;
-    GLuint shader_program_id;
-    GLuint vao_id;
-} pgwb_render_ctx_t;
-
-
-static const char* _pgwb_render_vertex_shader_source = 
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "layout(location = 0) in vec2 in_v2_pos;\n"
-    "layout(location = 1) in vec3 in_v3_colour;\n"
-    "uniform mat4 u_m4_transform;\n"
-    "out vec3 frag_colour;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = u_m4_transform * vec4(in_v2_pos, 0.0, 1.0);\n"
-    "    frag_colour = in_v3_colour;\n"
-    "}\n";
-
-static const char* _pgwb_render_fragment_shader_source = 
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "in vec3 frag_colour;\n"
-    "out vec4 out_v4_colour;\n"
-    "void main()\n"
-    "{\n"
-    "    out_v4_colour = vec4(frag_colour, 1.0);\n"
-    "}\n";
-
-
-static const struct
-{
-    float x, y;
-} _pgwb_render_vertices[3] =
-{
-    {-0.6f, -0.4f},
-    { 0.6f, -0.4f},
-    { 0.f ,  0.6f},
-};
 
 static pgwb_render_ctx_t _pgwb_render_ctx =
 {
     .window = NULL,
-    .shader_program_id = 0,
-    .vao_id = 0,
+    .shader_program = 0,
+    .vao = 0,
 };
 
 
@@ -107,41 +67,9 @@ int pgwb_render_init(void** ctx)
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    r_ctx->vao_id = vao;
-
     glEnableVertexAttribArray(0);
-
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &_pgwb_render_vertex_shader_source, NULL);
-    glCompileShader(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &_pgwb_render_fragment_shader_source, NULL);
-    glCompileShader(fs);
-
-    GLuint shader_program_id = glCreateProgram();
-    glAttachShader(shader_program_id, fs);
-    glAttachShader(shader_program_id, vs);
-    glLinkProgram(shader_program_id);
-    r_ctx->shader_program_id = shader_program_id;
-    
-    glUseProgram(shader_program_id);
-    float size = 30.f;
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    float ratio = (float)width / (float)height;
-    float Y = size;
-    float X = size * ratio;
-
-    float transform[16] = {
-        2.0f / X, 0.0f,      0.0f, 0.0f,
-        0.0f,     -2.0f / Y, 0.0f, 0.0f,
-        0.0f,     0.0f,      1.0f, 0.0f,
-        -1.f,    1.0f,      0.0f, 1.0f
-    };
-    GLint location = glGetUniformLocation(shader_program_id, "u_m4_transform");
-    glUniformMatrix4fv(location, 1, GL_FALSE, transform);
-
+    r_ctx->vao = vao;
+    pgwb_tile_ctx_init(&r_ctx->tile_ctx, vao, window); 
     return 0;
 }
 
@@ -186,7 +114,8 @@ void pgwb_render_iterate(void* ctx)
         {
             .surface = PGWB_TILE_SURFACE_GRASS,
         };
-        pgwb_tile_draw(r_ctx->shader_program_id, r_ctx->vao_id, &tile, 0, 0, 1, 1);
+        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 0, 0, 1, 1);
+        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 1, 1, 1, 1);
         glfwSwapBuffers(r_ctx->window);
     }
     else 
