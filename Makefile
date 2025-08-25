@@ -15,7 +15,7 @@ CC:=emcc
 CFLAGS:=-O3
 CFLAGS+= -I$(INT_INC_DIR) -I$(LIB_DIR)
 LDFLAGS:=-lglfw3
-EMCCFLAGS:=-s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']" -s USE_WEBGL2=1 -s USE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2
+EMCCFLAGS:=-s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']" -s USE_WEBGL2=1 -s USE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2  --preload-file $(RESOURCE_DIR)
 
 
 SRCS:=$(shell find $(SRC_DIR) -type f -name "*.c")
@@ -23,7 +23,6 @@ RESOURCES:=$(shell find $(RESOURCE_DIR) -type f)
 HTML:=$(WEBROOT)/index.html
 
 OBJS:=$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
-BUILT_RESOURCES:=$(patsubst $(RESOURCE_DIR)/%,$(BUILT_RESOURCE_DIR)/%,$(RESOURCES))
 
 default: $(HTML) $(BUILT_RESOURCES)
 
@@ -38,11 +37,7 @@ $(OBJS): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $(CFLAGS) $<
 
-$(HTML): $(OBJS) $(STATIC_RESOURCE_DIR)/shell_minimal.html
+$(HTML): $(OBJS) $(STATIC_RESOURCE_DIR)/shell_minimal.html $(RESOURCES)
 	@mkdir -p $(@D)
 	$(CC) -o $@ $(LDFLAGS) --shell-file $(STATIC_RESOURCE_DIR)/shell_minimal.html $(OBJS) $(EMCCFLAGS)
-
-$(BUILT_RESOURCES): $(BUILT_RESOURCE_DIR)/%: $(RESOURCE_DIR)/%
-	@mkdir -p $(@D)
-	cp $< $@
 

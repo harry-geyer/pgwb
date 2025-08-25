@@ -116,6 +116,8 @@ void pgwb_render_iterate(void* ctx)
         };
         pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 0, 0, 1, 1);
         pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 1, 1, 1, 1);
+        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 2, 2, 1, 1);
+        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 2, 4, 1, 1);
         glfwSwapBuffers(r_ctx->window);
     }
     else 

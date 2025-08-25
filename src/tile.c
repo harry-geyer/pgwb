@@ -13,7 +13,11 @@
 #define EGL_GLEXT_PROTOTYPES
 
 #include "tile.h"
+#include "util.h"
 
+
+#define PGWB_TILE_VERTEX_PATH       "/resources/shaders/tile.vert"
+#define PGWB_TILE_FRAGMENT_PATH     "/resources/shaders/tile.frag"
 
 #define PGWB_TILE_COLOUR_GRASS          0.0f, 1.0f, 0.0f
 #define PGWB_TILE_COLOUR_FOREST         0.0f, 0.2f, 0.0f
@@ -57,21 +61,13 @@ void pgwb_tile_ctx_init(pgwb_tile_ctx_t* ctx, GLuint vao, GLFWwindow* window)
 {
     memset(ctx, 0, sizeof(pgwb_tile_ctx_t));
 
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &_pgwb_render_vertex_shader_source, NULL);
-    glCompileShader(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &_pgwb_render_fragment_shader_source, NULL);
-    glCompileShader(fs);
-
-    GLuint shader_program_id = glCreateProgram();
-    glAttachShader(shader_program_id, fs);
-    glAttachShader(shader_program_id, vs);
-    glLinkProgram(shader_program_id);
-    ctx->shader_program = shader_program_id;
-    
-    glUseProgram(shader_program_id);
+    ctx->shader_program = pgwb_load_shaders(PGWB_TILE_VERTEX_PATH, PGWB_TILE_FRAGMENT_PATH);
+    if (!ctx->shader_program)
+    {
+        fprintf(stderr, "Fail to load shaders!\n");
+        return;
+    }
+    glUseProgram(ctx->shader_program);
     float size = 30.f;
     int width, height;
     glfwGetWindowSize(window, &width, &height);
@@ -85,7 +81,7 @@ void pgwb_tile_ctx_init(pgwb_tile_ctx_t* ctx, GLuint vao, GLFWwindow* window)
         0.0f,     0.0f,      1.0f, 0.0f,
         -1.f,    1.0f,      0.0f, 1.0f
     };
-    GLint location = glGetUniformLocation(shader_program_id, "u_m4_transform");
+    GLint location = glGetUniformLocation(ctx->shader_program, "u_m4_transform");
     glUniformMatrix4fv(location, 1, GL_FALSE, transform);
 }
 
