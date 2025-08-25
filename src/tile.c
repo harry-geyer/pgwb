@@ -33,30 +33,6 @@ static bool _pgwb_tile_draw_mountain(GLuint shader_program, GLuint vao, pgwb_til
 static bool _pgwb_tile_draw_hill(GLuint shader_program, GLuint vao, pgwb_tile_t* tile, float x, float y, float width, float height);
 
 
-static const char* _pgwb_render_vertex_shader_source = 
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "layout(location = 0) in vec2 in_v2_pos;\n"
-    "layout(location = 1) in vec3 in_v3_colour;\n"
-    "uniform mat4 u_m4_transform;\n"
-    "out vec3 frag_colour;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = u_m4_transform * vec4(in_v2_pos, 0.0, 1.0);\n"
-    "    frag_colour = in_v3_colour;\n"
-    "}\n";
-
-static const char* _pgwb_render_fragment_shader_source = 
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "in vec3 frag_colour;\n"
-    "out vec4 out_v4_colour;\n"
-    "void main()\n"
-    "{\n"
-    "    out_v4_colour = vec4(frag_colour, 1.0);\n"
-    "}\n";
-
-
 void pgwb_tile_ctx_init(pgwb_tile_ctx_t* ctx, GLuint vao, GLFWwindow* window)
 {
     memset(ctx, 0, sizeof(pgwb_tile_ctx_t));
