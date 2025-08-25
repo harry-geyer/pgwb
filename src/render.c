@@ -9,6 +9,8 @@
 #define GL_GLEXT_PROTOTYPES
 #define EGL_EGLEXT_PROTOTYPES
 
+#include "tile.h"
+
 
 typedef struct {
     GLFWwindow* window;
@@ -20,19 +22,24 @@ typedef struct {
 static const char* _pgwb_render_vertex_shader_source = 
     "#version 300 es\n"
     "precision mediump float;\n"
-    "in vec2 v2_pos;\n"
+    "layout(location = 0) in vec2 in_v2_pos;\n"
+    "layout(location = 1) in vec3 in_v3_colour;\n"
+    "uniform mat4 u_m4_transform;\n"
+    "out vec3 frag_colour;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(v2_pos, 0.0, 1.0);\n"
+    "    gl_Position = u_m4_transform * vec4(in_v2_pos, 0.0, 1.0);\n"
+    "    frag_colour = in_v3_colour;\n"
     "}\n";
 
 static const char* _pgwb_render_fragment_shader_source = 
     "#version 300 es\n"
     "precision mediump float;\n"
-    "out vec3 v3_colour;\n"
+    "in vec3 frag_colour;\n"
+    "out vec4 out_v4_colour;\n"
     "void main()\n"
     "{\n"
-    "    v3_colour = vec3(1, 1, 1);\n"
+    "    out_v4_colour = vec4(frag_colour, 1.0);\n"
     "}\n";
 
 
@@ -97,14 +104,8 @@ int pgwb_render_init(void** ctx)
     printf("Renderer: %s.\n", glGetString(GL_RENDERER));
     printf("OpenGL version supported %s.\n", glGetString(GL_VERSION));
 
-    GLuint vbo = 0;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), _pgwb_render_vertices, GL_STATIC_DRAW);
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     r_ctx->vao_id = vao;
 
@@ -123,6 +124,23 @@ int pgwb_render_init(void** ctx)
     glAttachShader(shader_program_id, vs);
     glLinkProgram(shader_program_id);
     r_ctx->shader_program_id = shader_program_id;
+    
+    glUseProgram(shader_program_id);
+    float size = 30.f;
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    float ratio = (float)width / (float)height;
+    float Y = size;
+    float X = size * ratio;
+
+    float transform[16] = {
+        2.0f / X, 0.0f,      0.0f, 0.0f,
+        0.0f,     -2.0f / Y, 0.0f, 0.0f,
+        0.0f,     0.0f,      1.0f, 0.0f,
+        -1.f,    1.0f,      0.0f, 1.0f
+    };
+    GLint location = glGetUniformLocation(shader_program_id, "u_m4_transform");
+    glUniformMatrix4fv(location, 1, GL_FALSE, transform);
 
     return 0;
 }
@@ -164,9 +182,11 @@ void pgwb_render_iterate(void* ctx)
 
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(r_ctx->shader_program_id);
-        glBindVertexArray(r_ctx->vao_id);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        pgwb_tile_t tile =
+        {
+            .surface = PGWB_TILE_SURFACE_GRASS,
+        };
+        pgwb_tile_draw(r_ctx->shader_program_id, r_ctx->vao_id, &tile, 0, 0, 1, 1);
         glfwSwapBuffers(r_ctx->window);
     }
     else 
