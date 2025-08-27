@@ -1,13 +1,15 @@
 #pragma once
 
-#include "tile.h"
+#include "grid.h"
 
 
 typedef struct {
     GLFWwindow* window;
     GLuint shader_program;
     GLuint vao;
-    pgwb_tile_ctx_t tile_ctx;
+    pgwb_grid_ctx_t grid_ctx;
+    double last_time;
+    int num_frames;
 } pgwb_render_ctx_t;
 
 

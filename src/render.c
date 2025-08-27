@@ -10,15 +10,8 @@
 #define EGL_EGLEXT_PROTOTYPES
 
 #include "render.h"
+#include "grid.h"
 #include "tile.h"
-
-
-static pgwb_render_ctx_t _pgwb_render_ctx =
-{
-    .window = NULL,
-    .shader_program = 0,
-    .vao = 0,
-};
 
 
 static void _pgwb_render_error_callback(int error, const char* description);
@@ -69,7 +62,10 @@ int pgwb_render_init(void** ctx)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
     r_ctx->vao = vao;
-    pgwb_tile_ctx_init(&r_ctx->tile_ctx, vao, window); 
+    pgwb_grid_ctx_init(&r_ctx->grid_ctx, window, vao); 
+
+    r_ctx->last_time = glfwGetTime();
+    r_ctx->num_frames = 0;
     return 0;
 }
 
@@ -102,6 +98,15 @@ void pgwb_render_iterate(void* ctx)
     }
     pgwb_render_ctx_t* r_ctx = (pgwb_render_ctx_t*)ctx;
 
+    double now = glfwGetTime();
+    r_ctx->num_frames++;
+    if (now - r_ctx->last_time >= 1.0)
+    {
+        printf("%d FPS\n", r_ctx->num_frames);
+        r_ctx->num_frames = 0;
+        r_ctx->last_time += 1.0;
+    }
+
     if (!glfwWindowShouldClose(r_ctx->window))
     {
         int width, height;
@@ -110,18 +115,12 @@ void pgwb_render_iterate(void* ctx)
 
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        pgwb_tile_t tile =
-        {
-            .surface = PGWB_TILE_SURFACE_GRASS,
-        };
-        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 0, 0, 1, 1);
-        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 1, 1, 1, 1);
-        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 2, 2, 1, 1);
-        pgwb_tile_draw(r_ctx->tile_ctx.shader_program, r_ctx->vao, &tile, 2, 4, 1, 1);
+        pgwb_grid_draw(&r_ctx->grid_ctx, r_ctx->window, r_ctx->vao);
         glfwSwapBuffers(r_ctx->window);
     }
     else 
     {
+        pgwb_grid_ctx_deinit(&r_ctx->grid_ctx);
         glfwDestroyWindow(r_ctx->window);
         glfwTerminate();
     }

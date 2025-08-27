@@ -18,6 +18,7 @@ typedef enum
 
 typedef struct pgwb_tile {
     pgwb_tile_surface_t surface;
+    float height;
 } pgwb_tile_t;
 
 
@@ -27,5 +28,5 @@ typedef struct pgwb_tile_ctx {
 
 
 void pgwb_tile_ctx_init(pgwb_tile_ctx_t* ctx, GLuint vao, GLFWwindow* window);
-bool pgwb_tile_draw(GLuint shader_program, GLuint vao, pgwb_tile_t* tile, float x, float y, float width, float height);
+bool pgwb_tile_draw(GLuint shader_program, GLuint vao, GLuint ebo, pgwb_tile_t* tile, float x, float y, float width, float height);
 
