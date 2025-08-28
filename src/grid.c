@@ -24,7 +24,7 @@
 static void _pgwb_grid_generate(pgwb_grid_ctx_t* ctx, float frequency, float amplitude);
 
 
-void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window, GLuint vao)
+void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window)
 {
     ctx->shader_program = pgwb_load_shaders(PGWB_GRID_VERTEX_PATH, PGWB_GRID_FRAGMENT_PATH);
     if (!ctx->shader_program)
@@ -59,17 +59,6 @@ void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window, GLuint vao)
     };
     GLint location = glGetUniformLocation(ctx->shader_program, "u_m4_transform");
     glUniformMatrix4fv(location, 1, GL_FALSE, transform);
-    glBindVertexArray(vao);
-    const unsigned indices[] = 
-    {
-        0, 1, 2,
-        1, 2, 3,
-    };
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    ctx->ebo = ebo;
 }
 
 
@@ -80,21 +69,87 @@ void pgwb_grid_ctx_deinit(pgwb_grid_ctx_t* ctx)
         free(ctx->tiles);
         ctx->tiles = 0;
     }
-    glDeleteBuffers(1, &ctx->ebo);
     memset(ctx, 0, sizeof(pgwb_grid_ctx_t));
 }
 
 
-void pgwb_grid_draw(pgwb_grid_ctx_t* ctx, GLFWwindow* window, GLuint vao)
+void pgwb_grid_draw(pgwb_grid_ctx_t* ctx, GLFWwindow* window)
 {
+
+    const float tile_width = 1.0f;
+    const unsigned tile_vertex_count = (2 + 3) * 4;  // 4 vertices per square, 2 spacial dimensions + 3 colour dimensions
+
+    unsigned count = ctx->height * ctx->width;
+    unsigned vertices_array_count = count * tile_vertex_count;
+    float* vertices = malloc(sizeof(float) * vertices_array_count);     
+    unsigned* indices = malloc(sizeof(unsigned) * count * 6);  // to draw 2 triangles
     for (int y = 0; y < ctx->height; y++)
     {
         for (int x = 0; x < ctx->width; x++)
         {
-            pgwb_tile_t* tile = &ctx->tiles[y * ctx->width + x];
-            pgwb_tile_draw(ctx->shader_program, vao, ctx->ebo, tile, x, y, 1.f, 1.f); 
+            unsigned i = y * ctx->width + x; 
+            pgwb_tile_t* tile = &ctx->tiles[i];
+
+            float r = 0.f, g = 0.f, b = 0.f;
+            pgwb_tile_get_colour(tile, &r, &g, &b);
+            unsigned tile_offset = i * tile_vertex_count;
+            vertices[tile_offset]     = x;
+            vertices[tile_offset + 1] = y;
+            vertices[tile_offset + 2] = r;
+            vertices[tile_offset + 3] = g;
+            vertices[tile_offset + 4] = b;
+
+            vertices[tile_offset + 5] = x + tile_width;
+            vertices[tile_offset + 6] = y;
+            vertices[tile_offset + 7] = r;
+            vertices[tile_offset + 8] = g;
+            vertices[tile_offset + 9] = b;
+
+            vertices[tile_offset + 10] = x + tile_width;
+            vertices[tile_offset + 11] = y + tile_width;
+            vertices[tile_offset + 12] = r;
+            vertices[tile_offset + 13] = g;
+            vertices[tile_offset + 14] = b;
+
+            vertices[tile_offset + 15] = x;
+            vertices[tile_offset + 16] = y + tile_width;
+            vertices[tile_offset + 17] = r;
+            vertices[tile_offset + 18] = g;
+            vertices[tile_offset + 19] = b;
+
+            unsigned int base_index = i * 4;
+            indices[i * 6]     = base_index;
+            indices[i * 6 + 1] = base_index + 1;
+            indices[i * 6 + 2] = base_index + 2;
+            indices[i * 6 + 3] = base_index + 2;
+            indices[i * 6 + 4] = base_index + 3;
+            indices[i * 6 + 5] = base_index;
         }
     }
+    GLuint vao, vbo, ebo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices_array_count, vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * count * 6, indices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(vertices[0]), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(vertices[0]), (void*)(sizeof(vertices[0]) * 2));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(ctx->shader_program);
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, count * 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+    free(vertices);
+    free(indices);
 }
 
 

@@ -57,12 +57,7 @@ int pgwb_render_init(void** ctx)
     printf("Renderer: %s.\n", glGetString(GL_RENDERER));
     printf("OpenGL version supported %s.\n", glGetString(GL_VERSION));
 
-    GLuint vao = 0;
-    glGenVertexArrays(1, &vao);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(0);
-    r_ctx->vao = vao;
-    pgwb_grid_ctx_init(&r_ctx->grid_ctx, window, vao); 
+    pgwb_grid_ctx_init(&r_ctx->grid_ctx, window); 
 
     r_ctx->last_time = glfwGetTime();
     r_ctx->num_frames = 0;
@@ -115,7 +110,7 @@ void pgwb_render_iterate(void* ctx)
 
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        pgwb_grid_draw(&r_ctx->grid_ctx, r_ctx->window, r_ctx->vao);
+        pgwb_grid_draw(&r_ctx->grid_ctx, r_ctx->window);
         glfwSwapBuffers(r_ctx->window);
     }
     else 

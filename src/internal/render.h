@@ -5,8 +5,6 @@
 
 typedef struct {
     GLFWwindow* window;
-    GLuint shader_program;
-    GLuint vao;
     pgwb_grid_ctx_t grid_ctx;
     double last_time;
     int num_frames;

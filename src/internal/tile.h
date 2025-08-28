@@ -29,4 +29,5 @@ typedef struct pgwb_tile_ctx {
 
 void pgwb_tile_ctx_init(pgwb_tile_ctx_t* ctx, GLuint vao, GLFWwindow* window);
 bool pgwb_tile_draw(GLuint shader_program, GLuint vao, GLuint ebo, pgwb_tile_t* tile, float x, float y, float width, float height);
+bool pgwb_tile_get_colour(pgwb_tile_t* tile, float* r, float* g, float* b);
 
