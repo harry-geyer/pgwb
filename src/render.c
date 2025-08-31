@@ -57,7 +57,8 @@ int pgwb_render_init(void** ctx)
     printf("Renderer: %s.\n", glGetString(GL_RENDERER));
     printf("OpenGL version supported %s.\n", glGetString(GL_VERSION));
 
-    pgwb_grid_ctx_init(&r_ctx->grid_ctx, window); 
+    const unsigned initial_seed = 0xC0FFEE;
+    pgwb_grid_ctx_init(initial_seed, &r_ctx->grid_ctx, window); 
 
     r_ctx->last_time = glfwGetTime();
     r_ctx->num_frames = 0;

@@ -21,10 +21,10 @@
 #define PGWB_GRID_FRAGMENT_PATH     "/resources/shaders/tile.frag"
 
 
-static void _pgwb_grid_generate(pgwb_grid_ctx_t* ctx, float frequency, float amplitude);
+static void _pgwb_grid_generate(unsigned seed, pgwb_grid_ctx_t* ctx, float frequency, float amplitude);
 
 
-void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window)
+void pgwb_grid_ctx_init(unsigned seed, pgwb_grid_ctx_t* ctx, GLFWwindow* window)
 {
     ctx->shader_program = pgwb_load_shaders(PGWB_GRID_VERTEX_PATH, PGWB_GRID_FRAGMENT_PATH);
     if (!ctx->shader_program)
@@ -48,7 +48,7 @@ void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window)
         fprintf(stderr, "Failed to allocate memory for tiles\n");
         return;
     }
-    _pgwb_grid_generate(ctx, 10.f, 1.f);
+    _pgwb_grid_generate(seed, ctx, 10.f, 1.f);
 
     float transform[16] =
     {
@@ -153,7 +153,7 @@ void pgwb_grid_draw(pgwb_grid_ctx_t* ctx, GLFWwindow* window)
 }
 
 
-static void _pgwb_grid_generate(pgwb_grid_ctx_t* ctx, float frequency, float amplitude)
+static void _pgwb_grid_generate(unsigned seed, pgwb_grid_ctx_t* ctx, float frequency, float amplitude)
 {
     float* height_map = malloc(sizeof(float) * ctx->width * ctx->height);
     if (!height_map)
@@ -161,7 +161,7 @@ static void _pgwb_grid_generate(pgwb_grid_ctx_t* ctx, float frequency, float amp
         fprintf(stderr, "Failed to allocate memory for height map\n");
         return;
     }
-    pgwb_perlin_generate(height_map, ctx->width, ctx->height, frequency, amplitude);
+    pgwb_perlin_generate(seed, height_map, ctx->width, ctx->height, frequency, amplitude);
     for (unsigned i = 0; i < ctx->width * ctx->height; i++)
     {
         pgwb_tile_t* tile = &ctx->tiles[i];

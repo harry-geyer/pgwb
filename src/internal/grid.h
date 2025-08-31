@@ -11,7 +11,7 @@ typedef struct {
 } pgwb_grid_ctx_t;
 
 
-void pgwb_grid_ctx_init(pgwb_grid_ctx_t* ctx, GLFWwindow* window);
+void pgwb_grid_ctx_init(unsigned seed, pgwb_grid_ctx_t* ctx, GLFWwindow* window);
 void pgwb_grid_ctx_deinit(pgwb_grid_ctx_t* ctx);
 void pgwb_grid_draw(pgwb_grid_ctx_t* ctx, GLFWwindow* window);
 

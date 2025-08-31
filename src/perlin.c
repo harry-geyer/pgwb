@@ -26,8 +26,9 @@ static int _pgwb_grad[8][2] =
 };
 
 
-void pgwb_perlin_generate(float* height_map, int width, int height, float frequency, float amplitude)
+void pgwb_perlin_generate(unsigned seed, float* height_map, int width, int height, float frequency, float amplitude)
 {
+    srand(seed);
     _pgwb_init_permutation();
 
     for (int y = 0; y < height; y++) 
